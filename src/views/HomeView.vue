@@ -4,11 +4,12 @@ import BaseButton from '@/components/BaseButton.vue';
 import BookCard from '@/components/BookCard.vue';
 import AddBookModal from '@/components/AddBookModal.vue';
 import { useBooksStore } from '@/stores/booksStore';
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
 
 const booksStore = useBooksStore();
-const books = booksStore.books
+const books = ref(booksStore.books)
 let showAddModal = ref(false);
+let searchValue = ref('');
 
 function showModal(val) {
   switch (val) {
@@ -25,6 +26,29 @@ function addBook(book) {
   booksStore.addBook(book);
   showAddModal.value = false;
 }
+
+function debounce(fn, delay) {
+  let timeoutId;
+
+  return function(...args) {
+    clearTimeout(timeoutId);
+    timeoutId = setTimeout(() => fn.apply(this, args), delay);
+  }
+}
+
+function bookSearch(value) {
+  if (value) {
+    books.value = booksStore.books.filter(book => book.title.toLowerCase().includes(value));
+  } else {
+    books.value = booksStore.books;
+  }
+}
+
+const debouncedSearch = debounce(bookSearch, 500);
+
+watch(searchValue, (newValue) => {
+  debouncedSearch(newValue);
+})
 </script>
 
 <template>
@@ -34,7 +58,7 @@ function addBook(book) {
         <img src="../assets/logo.svg">
         <div class="search__input-container">
           <img src="../assets/search.svg">
-          <BaseInput class="search__input" :placeholder="'Найти ту самую книгу'" />
+          <BaseInput class="search__input" :placeholder="'Найти ту самую книгу'" v-model="searchValue" />
         </div>
       </div>
       <div class="header">
