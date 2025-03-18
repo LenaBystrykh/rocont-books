@@ -12,7 +12,7 @@ import fileAdd from '../assets/file-add.svg';
 import fileDeleted from '../assets/file-deleted.svg';
 import fileError from '../assets/file-error.svg';
 import fileSuccess from '../assets/file-success.svg';
-import closeIcon from '../assets/close.svg';
+import closeIcon from '../assets/close-white.svg';
 
 const props = defineProps({
     text: String,

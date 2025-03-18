@@ -2,13 +2,29 @@
 import BaseInput from '@/components/BaseInput.vue';
 import BaseButton from '@/components/BaseButton.vue';
 import BookCard from '@/components/BookCard.vue';
+import AddBookModal from '@/components/AddBookModal.vue';
+import { useBooksStore } from '@/stores/booksStore';
 import { ref } from 'vue';
 
-let books = ref([
-  {id: 1, title: 'Как разговаривать с кем угодно, когда угодно, где угодно', author: 'Ларри Кинг', year: 2011, genre: 'Научпоп'},
-  {id: 2, title: 'Больше, чем просто красивая. 12 тайных сил женщины, перед которой невозможно устоять', author: 'Кара Кинг', year: 2020, genre: 'Научпоп'},
-  {id: 3, title: 'Третье название', author: 'Третий автор', year: 2023, genre: 'Фантастика'},
-])
+const booksStore = useBooksStore();
+const books = booksStore.books
+let showAddModal = ref(false);
+
+function showModal(val) {
+  switch (val) {
+    case 'add':
+      showAddModal.value = true;
+    case 'none':
+      showAddModal.value = false;
+    default:
+      showAddModal.value = false;
+  }
+}
+
+function addBook(book) {
+  booksStore.addBook(book);
+  showAddModal.value = false;
+}
 </script>
 
 <template>
@@ -23,7 +39,7 @@ let books = ref([
       </div>
       <div class="header">
         <h1>Книги в каталоге</h1>
-        <BaseButton :icon="'add'" :text="'Добавить книгу'" />
+        <BaseButton :icon="'add'" :text="'Добавить книгу'" @click="showAddModal = true" />
       </div>
     </header>
 
@@ -33,6 +49,7 @@ let books = ref([
       </div>
     </div>
   </main>
+  <AddBookModal v-if="showAddModal" @addBook="addBook" @closeModal="showModal('none')" />
 </template>
 
 <style lang="scss">
