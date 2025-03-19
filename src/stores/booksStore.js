@@ -13,5 +13,11 @@ export const useBooksStore = defineStore('books', {
       this.books.unshift({id: this.books.length + 1, ...book});
       localStorage.setItem('books', JSON.stringify(this.books));
     },
+    editBook(book) {
+      const index = this.books.findIndex((item) => item.id === book.id);
+      if (index !== -1) {
+        this.books[index] = book;
+      }
+    }
   },
 })

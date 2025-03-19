@@ -134,6 +134,7 @@ const emit = defineEmits(['closeModal'])
         &__actions {
             display: flex;
             justify-content: flex-end;
+            gap: 8px;
         }
     }
 }
@@ -146,6 +147,10 @@ const emit = defineEmits(['closeModal'])
             border: none;
             border-radius: 0;
             padding: 28px;
+
+            &__actions {
+                margin-top: auto;
+            }
         }
     }
 }
@@ -158,6 +163,10 @@ const emit = defineEmits(['closeModal'])
             border: none;
             border-radius: 0;
             padding: 20px;
+
+            &__actions {
+                margin-top: auto;
+            }
         }
     }
 }

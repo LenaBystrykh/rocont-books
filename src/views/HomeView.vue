@@ -3,14 +3,23 @@ import BaseInput from '@/components/BaseInput.vue';
 import BaseButton from '@/components/BaseButton.vue';
 import BookCard from '@/components/BookCard.vue';
 import AddBookModal from '@/components/AddBookModal.vue';
+import EditBookModal from '@/components/EditBookModal.vue';
 import { useBooksStore } from '@/stores/booksStore';
-import { ref, watch } from 'vue';
+import { ref, reactive, watch } from 'vue';
 
 const booksStore = useBooksStore();
 const books = ref(booksStore.books)
 let showAddModal = ref(false);
+let showEditModal = ref(false);
 let searchValue = ref('');
 let isMobileSearchOpen = ref(false);
+let bookToEdit = reactive({
+  id: null,
+  title: null,
+  author: null,
+  year: null,
+  genre: null
+})
 
 function clearInput() {
   isMobileSearchOpen.value = false;
@@ -20,17 +29,39 @@ function clearInput() {
 function showModal(val) {
   switch (val) {
     case 'add':
+      showEditModal.value = false;
       showAddModal.value = true;
-    case 'none':
+    case 'edit':
       showAddModal.value = false;
+      showEditModal.value = true;
     default:
       showAddModal.value = false;
+      showEditModal.value = false;
   }
 }
 
 function addBook(book) {
   booksStore.addBook(book);
   showAddModal.value = false;
+}
+
+function editBook(book) {
+  bookToEdit.id = book.id;
+  bookToEdit.title = book.title;
+  bookToEdit.author = book.author;
+  bookToEdit.year = book.year;
+  bookToEdit.genre = book.genre;
+  showEditModal.value = true;
+}
+
+function saveBook(book) {
+  booksStore.editBook({id: bookToEdit.id, ...book});
+  showEditModal.value = false;
+  bookToEdit.id = null;
+  bookToEdit.title = null;
+  bookToEdit.author = null;
+  bookToEdit.year = null;
+  bookToEdit.genre = null;
 }
 
 function debounce(fn, delay) {
@@ -44,13 +75,13 @@ function debounce(fn, delay) {
 
 function bookSearch(value) {
   if (value) {
-    books.value = booksStore.books.filter(book => book.title.toLowerCase().includes(value));
+    books.value = booksStore.books.filter(book => book.title.toLowerCase().includes(value.toLowerCase()));
   } else {
     books.value = booksStore.books;
   }
 }
 
-const debouncedSearch = debounce(bookSearch, 500);
+const debouncedSearch = debounce(bookSearch, 250);
 
 watch(searchValue, (newValue) => {
   debouncedSearch(newValue);
@@ -81,7 +112,7 @@ watch(searchValue, (newValue) => {
 
     <div class="main-content">
       <div v-for="book in books" :key="book.id">
-        <BookCard :book="book" />
+        <BookCard :book="book" @edit-book="editBook(book)"/>
       </div>
       <p v-if="books.length === 0" class="main-content__empty-search">По вашему запросу ничего не найдено</p>
     </div>
@@ -89,6 +120,7 @@ watch(searchValue, (newValue) => {
 
   </main>
   <AddBookModal v-if="showAddModal" @addBook="addBook" @closeModal="showModal('none')" />
+  <EditBookModal v-if="showEditModal" :book="bookToEdit" @saveBook="saveBook" @closeModal="showModal('none')" />
 </template>
 
 <style lang="scss">
@@ -204,6 +236,7 @@ header {
 @media (min-width: 480px) and (max-width: 767px) {
   header {
     padding: 16px 28px;
+    height: 103px;
   }
 
   .search {
@@ -239,6 +272,7 @@ header {
 @media (max-width: 479px) {
   header {
     padding: 16px 20px;
+    height: 103px;
   }
 
   .search {

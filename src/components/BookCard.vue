@@ -8,13 +8,14 @@
                 <p>{{ book.genre }}</p>
             </div>
         </div>
-        <img :src="editIcon">
+        <img :src="editIcon" @click="emit('editBook')">
     </div>
 </template>
 
 <script setup>
 import editIcon from '../assets/file-edit.svg';
 
+const emit = defineEmits(['editBook'])
 const props = defineProps({
     book: {
         type: Object,
@@ -58,6 +59,10 @@ const props = defineProps({
         font-size: 14px;
         line-height: 1.5;
         color: var(--dark-gray);
+    }
+
+    img {
+        cursor: pointer;
     }
 }
 </style>
