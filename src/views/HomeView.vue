@@ -4,6 +4,9 @@ import BaseButton from '@/components/BaseButton.vue';
 import BookCard from '@/components/BookCard.vue';
 import AddBookModal from '@/components/AddBookModal.vue';
 import EditBookModal from '@/components/EditBookModal.vue';
+import DeleteBookModal from '@/components/DeleteBookModal.vue';
+import sortIcon from '@/assets/sort.svg';
+import selectedIcon from '@/assets/selected.svg';
 import { useBooksStore } from '@/stores/booksStore';
 import { ref, reactive, watch } from 'vue';
 
@@ -11,7 +14,10 @@ const booksStore = useBooksStore();
 const books = ref(booksStore.books)
 let showAddModal = ref(false);
 let showEditModal = ref(false);
+let showDeleteModal = ref(false);
+let showSortOptions = ref(false);
 let searchValue = ref('');
+let sortValue = ref('')
 let isMobileSearchOpen = ref(false);
 let bookToEdit = reactive({
   id: null,
@@ -24,20 +30,6 @@ let bookToEdit = reactive({
 function clearInput() {
   isMobileSearchOpen.value = false;
   searchValue.value = '';
-}
-
-function showModal(val) {
-  switch (val) {
-    case 'add':
-      showEditModal.value = false;
-      showAddModal.value = true;
-    case 'edit':
-      showAddModal.value = false;
-      showEditModal.value = true;
-    default:
-      showAddModal.value = false;
-      showEditModal.value = false;
-  }
 }
 
 function addBook(book) {
@@ -64,6 +56,18 @@ function saveBook(book) {
   bookToEdit.genre = null;
 }
 
+function deleteBook() {
+  booksStore.deleteBook(bookToEdit.id);
+  showDeleteModal.value = false;
+  showEditModal.value = false;
+  bookToEdit.id = null;
+  bookToEdit.title = null;
+  bookToEdit.author = null;
+  bookToEdit.year = null;
+  bookToEdit.genre = null;
+  books.value = booksStore.books;
+}
+
 function debounce(fn, delay) {
   let timeoutId;
 
@@ -86,6 +90,56 @@ const debouncedSearch = debounce(bookSearch, 250);
 watch(searchValue, (newValue) => {
   debouncedSearch(newValue);
 })
+
+function toggleSort(value) {
+  switch (value) {
+    case 'nameD':
+      sortValue.value = sortValue.value === 'nameD' ? '' : 'nameD';
+      break;
+    case 'nameA':
+      sortValue.value = sortValue.value === 'nameA' ? '' : 'nameA';
+      break;
+    case 'yearD':
+      sortValue.value = sortValue.value === 'yearD' ? '' : 'yearD';
+      break;
+    case 'yearA':
+      sortValue.value = sortValue.value === 'yearA' ? '' : 'yearA';
+      break;
+    case 'authorD':
+      sortValue.value = sortValue.value === 'authorD' ? '' : 'authorD';
+      break;
+    case 'authorA':
+      sortValue.value = sortValue.value === 'authorA' ? '' : 'authorA';
+      break;
+    default:
+      sortValue.value = '';
+      break;
+  }
+
+  switch (sortValue.value) {
+    case 'nameD':
+      books.value.sort((a, b) => (a.title > b.title) ? 1 : ((b.title > a.title) ? -1 : 0));
+      break;
+    case 'nameA':
+      books.value.sort((a, b) => (a.title < b.title) ? 1 : ((b.title < a.title) ? -1 : 0));
+      break;
+    case 'yearD':
+      books.value.sort((a, b) => Number(b.year) - Number(a.year));
+      break;
+    case 'yearA':
+      books.value.sort((a, b) => Number(a.year) - Number(b.year));
+      break;
+    case 'authorD':
+      books.value.sort((a, b) => (a.author > b.author) ? 1 : ((b.author > a.author) ? -1 : 0));
+      break;
+    case 'authorA':
+      books.value.sort((a, b) => (a.author < b.author) ? 1 : ((b.author < a.author) ? -1 : 0));
+      break;
+    default:
+      books.value = JSON.parse(localStorage.getItem('books'));
+      break;
+  }
+}
 </script>
 
 <template>
@@ -104,8 +158,20 @@ watch(searchValue, (newValue) => {
         </div>
       </div>
       <div class="header">
-        <h1 v-if="searchValue">Книги по запросу <span>«{{ searchValue }}»</span></h1>
-        <h1 v-else>Книги в каталоге <span>{{ books.length }}</span></h1>
+        <div class="header__title">
+          <h1 v-if="searchValue">Книги по запросу <span>«{{ searchValue }}»</span></h1>
+          <h1 v-else>Книги в каталоге <span>{{ books.length }}</span></h1>
+          <img :src="sortIcon" @click="showSortOptions = !showSortOptions">
+          <div v-if="showSortOptions" class="sort-options">
+            <p @click="toggleSort('nameD')"><img :class="{selected: sortValue === 'nameD'}" :src="selectedIcon">По названию (А-Я)</p>
+            <p @click="toggleSort('nameA')"><img :class="{selected: sortValue === 'nameA'}" :src="selectedIcon">По названию (Я-А)</p>
+            <p @click="toggleSort('yearD')"><img :class="{selected: sortValue === 'yearD'}" :src="selectedIcon">По году (сначала новые)</p>
+            <p @click="toggleSort('yearA')"><img :class="{selected: sortValue === 'yearA'}" :src="selectedIcon">По году (сначала старые)</p>
+            <p @click="toggleSort('authorD')"><img :class="{selected: sortValue === 'authorD'}" :src="selectedIcon">По автору (А-Я)</p>
+            <p @click="toggleSort('authorA')"><img :class="{selected: sortValue === 'authorA'}" :src="selectedIcon">По автору (Я-А)</p>
+          </div>
+        </div>
+
         <BaseButton class="add-book-button" :icon="'add'" :text="'Добавить книгу'" @click="showAddModal = true" />
       </div>
     </header>
@@ -119,8 +185,9 @@ watch(searchValue, (newValue) => {
     <BaseButton class="add-book-button_mobile" :icon="'add'" :text="'Добавить книгу'" @click="showAddModal = true" />
 
   </main>
-  <AddBookModal v-if="showAddModal" @addBook="addBook" @closeModal="showModal('none')" />
-  <EditBookModal v-if="showEditModal" :book="bookToEdit" @saveBook="saveBook" @closeModal="showModal('none')" />
+  <AddBookModal v-if="showAddModal" @addBook="addBook" @closeModal="showAddModal = false" />
+  <EditBookModal v-if="showEditModal" :book="bookToEdit" @saveBook="saveBook" @deleteBook="showDeleteModal = true" @closeModal="showEditModal = false" />
+  <DeleteBookModal v-if="showDeleteModal" :book="bookToEdit" @deleteBook="deleteBook" @closeModal="showDeleteModal = false" />
 </template>
 
 <style lang="scss">
@@ -133,7 +200,6 @@ main {
 
 header {
   width: 100%;
-  height: 130px;
   background: var(--light-gray);
   padding: 16px 40px;
 }
@@ -177,11 +243,56 @@ header {
   align-items: center;
   margin-top: 16px;
 
+  &__title {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    position: relative;
+
+    img {
+      cursor: pointer;
+    }
+
+    .sort-options {
+      position: absolute;
+      top: 32px;
+      right: 0;
+      background: var(--white);
+      border-radius: 8px;
+      padding: 12px;
+      font-family: Inter;
+      font-size: 14px;
+      font-weight: 400;
+      line-height: 1;
+      color: var(--dark);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      border: 2px solid var(--light-gray);
+      
+      p {
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+
+        img {
+          margin-right: 4px;
+          opacity: 0;
+
+          &.selected {
+            opacity: 1;
+          }
+        }
+      }
+    }
+  }
+
   h1 {
     font-family: Inter;
     font-size: 20px;
     font-weight: 600;
     line-height: 1;
+    color: var(--dark);
 
     span {
       font-family: Inter;
@@ -236,7 +347,6 @@ header {
 @media (min-width: 480px) and (max-width: 767px) {
   header {
     padding: 16px 28px;
-    height: 103px;
   }
 
   .search {
@@ -272,7 +382,6 @@ header {
 @media (max-width: 479px) {
   header {
     padding: 16px 20px;
-    height: 103px;
   }
 
   .search {
@@ -296,6 +405,7 @@ header {
   }
 
   .search__input_mobile {
+    height: 41px;
     padding-left: 36px;
     background: var(--white);
     border: 2px solid var(--white);

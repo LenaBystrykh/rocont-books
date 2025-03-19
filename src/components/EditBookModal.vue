@@ -29,7 +29,7 @@
         </template>
         <template v-slot:actions>
             <BaseButton class="modal__action" :text="'Сохранить'" :icon="'success'" @click="saveBook"/>
-            <button class="modal__action-delete">
+            <button class="modal__action-delete" @click="emit('deleteBook')">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M3 6H21" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                     <path d="M19 6V20C19 21 18 22 17 22H7C6 22 5 21 5 20V6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -50,7 +50,7 @@ import checkboxEmpty from '../assets/checkbox-empty.svg';
 import checkboxFilled from '../assets/checkbox-filled.svg';
 import { ref, reactive } from 'vue';
 
-const emit = defineEmits(['saveBook', 'closeModal'])
+const emit = defineEmits(['saveBook', 'deleteBook', 'closeModal'])
 const props = defineProps({
     book: Object
 })
@@ -131,6 +131,7 @@ function switchCheckbox() {
     padding: 10px 12px;
     cursor: pointer;
     color: var(--dark-gray);
+    background: var(--light-gray);
 
     &:hover {
         color: var(--error);

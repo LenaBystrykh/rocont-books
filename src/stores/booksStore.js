@@ -18,6 +18,13 @@ export const useBooksStore = defineStore('books', {
       if (index !== -1) {
         this.books[index] = book;
       }
+      localStorage.setItem('books', JSON.stringify(this.books));
+    },
+    deleteBook(id) {
+      this.books = this.books.filter((item) => {
+        return item.id !== id;
+      })
+      localStorage.setItem('books', JSON.stringify(this.books));
     }
   },
 })
