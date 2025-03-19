@@ -1,5 +1,5 @@
 <template>
-    <BaseModal @closeModal="$emit('closeModal')">
+    <BaseModal @closeModal="emit('closeModal')">
         <template v-slot:title>Добавить книгу</template>
         <template v-slot:subtitle>Заполните все поля и добавьте книгу в список</template>
         <template v-slot:content>
@@ -23,7 +23,11 @@
             <BaseInput class="modal__field-input" :placeholder="'Добавьте жанр произведения'" v-model="book.genre" />
         </div>
         </template>
-        <template v-slot:actions><BaseButton :text="'Добавить'" :icon="'add'" @click="addBook"/></template>
+        <template v-slot:agreement>
+            <img :src="checkboxImg" @click="switchCheckbox">
+            <p>Я согласен с условиями <span>Политики конфиденциальности</span></p>
+        </template>
+        <template v-slot:actions><BaseButton class="modal__action" :text="'Добавить'" :icon="'add'" @click="addBook"/></template>
     </BaseModal>
 </template>
 
@@ -31,9 +35,13 @@
 import BaseModal from './BaseModal.vue';
 import BaseButton from './BaseButton.vue';
 import BaseInput from './BaseInput.vue';
+import checkboxEmpty from '../assets/checkbox-empty.svg';
+import checkboxFilled from '../assets/checkbox-filled.svg';
 import { ref, reactive } from 'vue';
 
-const emit = defineEmits(['addBook'])
+const emit = defineEmits(['addBook', 'closeModal'])
+
+const checkboxImg = ref(checkboxEmpty);
 
 const book = reactive({
     title: null,
@@ -55,9 +63,13 @@ function addBook() {
   if (isNaN(book.year) || Number(book.year) <= 0 || Number(book.year) > new Date().getFullYear()) {
     errors.value.push('invalidYear')
   }
-  if (errors.value.length === 0) {
+  if (errors.value.length === 0 && checkboxImg.value === checkboxFilled) {
     emit('addBook', book)
   }
+}
+
+function switchCheckbox() {
+    checkboxImg.value = checkboxImg.value === checkboxEmpty ? checkboxFilled : checkboxEmpty;
 }
 </script>
 
@@ -95,6 +107,20 @@ function addBook() {
       line-height: 1;
       margin-left: 16px;
       color: var(--error);
+    }
+}
+
+@media (min-width: 480px) and (max-width: 767px) {
+    .modal__action {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+@media (max-width: 479px) {
+    .modal__action {
+        width: 100%;
+        justify-content: center;
     }
 }
 </style>

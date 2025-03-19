@@ -6,7 +6,7 @@
                     <div class="modal__title"><slot name="title"></slot></div>
                     <div class="modal__subtitle"><slot name="subtitle"></slot></div>
                 </div>
-                <img src="../assets/close.svg" @click="$emit('closeModal')">
+                <img src="../assets/close.svg" @click="emit('closeModal')">
             </div>
 
             <div class="modal__content">
@@ -14,8 +14,7 @@
             </div>
 
             <div class="modal__agreement">
-                <img :src="checkboxImg" @click="switchCheckbox">
-                <p>Я согласен с условиями <span>Политики конфиденциальности</span></p>
+                <slot name="agreement"></slot>
             </div>
 
             <div class="modal__actions">
@@ -26,15 +25,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
-import checkboxEmpty from '../assets/checkbox-empty.svg';
-import checkboxFilled from '../assets/checkbox-filled.svg';
-
-const checkboxImg = ref(checkboxEmpty);
-
-function switchCheckbox() {
-    checkboxImg.value = checkboxImg.value === checkboxEmpty ? checkboxFilled : checkboxEmpty;
-}
+const emit = defineEmits(['closeModal'])
 </script>
 
 <style lang="scss">
@@ -143,6 +134,30 @@ function switchCheckbox() {
         &__actions {
             display: flex;
             justify-content: flex-end;
+        }
+    }
+}
+
+@media (min-width: 480px) and (max-width: 767px) {
+    .modal-bg {
+        .modal {
+            width: 100%;
+            height: 100%;
+            border: none;
+            border-radius: 0;
+            padding: 28px;
+        }
+    }
+}
+
+@media (max-width: 479px) {
+    .modal-bg {
+        .modal {
+            width: 100%;
+            height: 100%;
+            border: none;
+            border-radius: 0;
+            padding: 20px;
         }
     }
 }
