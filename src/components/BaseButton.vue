@@ -39,6 +39,8 @@ const url = computed(() => {
             return fileError;
         case 'success':
             return fileSuccess;
+        default:
+            return fileSuccess;
     }
 });
 </script>

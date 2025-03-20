@@ -16,7 +16,7 @@
 import editIcon from '../assets/file-edit.svg';
 
 const emit = defineEmits(['editBook'])
-const props = defineProps({
+defineProps({
     book: {
         type: Object,
         required: true

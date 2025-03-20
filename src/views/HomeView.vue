@@ -43,7 +43,7 @@ function addBook(book) {
   notificationText.value = 'Книга добавлена в список';
   notificationSuccess.value = true;
   isNotificationVisible.value = true;
-  debouncedNotification();
+  notificationTimeout = setTimeout(hideNotification, 3000);
 }
 
 function editBook(book) {
@@ -67,7 +67,7 @@ function saveBook(book) {
   notificationText.value = 'Книга изменена';
   notificationSuccess.value = true;
   isNotificationVisible.value = true;
-  debouncedNotification();
+  notificationTimeout = setTimeout(hideNotification, 3000);
 }
 
 function hideNotification() {
@@ -75,9 +75,11 @@ function hideNotification() {
   notificaionIcon.value = '';
   notificationText.value = '';
   notificationSuccess.value = false;
+  clearTimeout(notificationTimeout);
 }
 
 let deleteTimeout;
+let notificationTimeout;
 
 function notificationClick() {
   if (notificationText.value === 'Книга удалена. Вернуть её') {
@@ -86,7 +88,7 @@ function notificationClick() {
     notificationText.value = 'Книга не удалена.';
     notificationSuccess.value = false;
     isNotificationVisible.value = true;
-    debouncedNotification();
+    notificationTimeout = setTimeout(hideNotification, 3000);
   }
 }
 
@@ -109,7 +111,7 @@ function deleteBook() {
   notificationSuccess.value = true;
   isNotificationVisible.value = true;
   setTimeout(underlineText, 0);
-  debouncedNotification();
+  notificationTimeout = setTimeout(hideNotification, 3000);
 }
 
 function underlineText() {
@@ -138,7 +140,6 @@ function bookSearch(value) {
 }
 
 const debouncedSearch = debounce(bookSearch, 250);
-const debouncedNotification = debounce(hideNotification, 3000);
 
 watch(searchValue, (newValue) => {
   debouncedSearch(newValue);
@@ -240,7 +241,8 @@ function toggleSort(value) {
         <BookCard :book="book" @edit-book="editBook(book)"/>
       </div>
       <p v-if="books.length === 0" class="main-content__empty-search">По вашему запросу ничего не найдено</p>
-      <BaseButton v-if="isNotificationVisible" class="main-notification" :icon="notificaionIcon" :text="notificationText" :isNotification="true" :success="notificationSuccess" @textClicked="notificationClick" @closeNotification="isNotificationVisible = false" />
+      <BaseButton v-if="isNotificationVisible" class="main-notification" :icon="notificaionIcon" :text="notificationText" 
+      :isNotification="true" :success="notificationSuccess" @textClicked="notificationClick" @closeNotification="hideNotification" />
     </div>
     <BaseButton class="add-book-button_mobile" :icon="'add'" :text="'Добавить книгу'" @click="showAddModal = true" />
 
@@ -516,8 +518,8 @@ header {
   .main-notification {
     top: 16px;
     bottom: auto;
-    left: 16px;
-    width: calc(100% - 32px);
+    left: 8px;
+    width: calc(100% - 16px);
     transform: none;
   }
 }

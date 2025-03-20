@@ -15,7 +15,7 @@ import BaseButton from './BaseButton.vue';
 
 const emit = defineEmits(['deleteBook', 'closeModal'])
 
-const props = defineProps({
+defineProps({
     book: Object
 })
 </script>
