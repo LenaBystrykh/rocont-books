@@ -1,8 +1,8 @@
 <template>
     <button :class="[{ 'notification': isNotification }, success ? 'success' : 'error']">
         <img class="button__icon" :src="url">
-        {{ text }}
-        <img v-if="isNotification" class="notification__close" :src="closeIcon">
+        <p @click="emit('textClicked')">{{ text }}</p>
+        <img v-if="isNotification" class="notification__close" :src="closeIcon" @click="emit('closeNotification')">
     </button>
 </template>
 
@@ -27,6 +27,8 @@ const props = defineProps({
     }
 });
 
+const emit = defineEmits(['closeNotification', 'textClicked'])
+
 const url = computed(() => {
     switch (props.icon) {
         case 'add':
@@ -49,14 +51,19 @@ button {
     padding: 10px 12px;
     border: none;
     outline: none;
-    font-size: 14px;
-    line-height: 1.5;
-    font-family: Inter;
-    color: var(--white);
     display: flex;
     align-items: center;
     gap: 4px;
     cursor: pointer;
+
+    p {
+        font-size: 14px;
+        line-height: 1.5;
+        font-family: Inter;
+        color: var(--white);
+        cursor: pointer;
+        flex: 1;
+    }
 
     &.notification {
         cursor: default;

@@ -17,7 +17,11 @@ let showEditModal = ref(false);
 let showDeleteModal = ref(false);
 let showSortOptions = ref(false);
 let searchValue = ref('');
-let sortValue = ref('')
+let sortValue = ref('');
+let isNotificationVisible = ref(false);
+let notificaionIcon = ref('');
+let notificationText = ref('');
+let notificationSuccess = ref(false);
 let isMobileSearchOpen = ref(false);
 let bookToEdit = reactive({
   id: null,
@@ -35,6 +39,11 @@ function clearInput() {
 function addBook(book) {
   booksStore.addBook(book);
   showAddModal.value = false;
+  notificaionIcon.value = 'success';
+  notificationText.value = 'Книга добавлена в список';
+  notificationSuccess.value = true;
+  isNotificationVisible.value = true;
+  debouncedNotification();
 }
 
 function editBook(book) {
@@ -54,18 +63,58 @@ function saveBook(book) {
   bookToEdit.author = null;
   bookToEdit.year = null;
   bookToEdit.genre = null;
+  notificaionIcon.value = 'success';
+  notificationText.value = 'Книга изменена';
+  notificationSuccess.value = true;
+  isNotificationVisible.value = true;
+  debouncedNotification();
 }
 
-function deleteBook() {
+function hideNotification() {
+  isNotificationVisible.value = false;
+  notificaionIcon.value = '';
+  notificationText.value = '';
+  notificationSuccess.value = false;
+}
+
+let deleteTimeout;
+
+function notificationClick() {
+  if (notificationText.value === 'Книга удалена. Вернуть её') {
+    clearTimeout(deleteTimeout);
+    notificaionIcon.value = 'error';
+    notificationText.value = 'Книга не удалена.';
+    notificationSuccess.value = false;
+    isNotificationVisible.value = true;
+    debouncedNotification();
+  }
+}
+
+function approvedDeletion() {
   booksStore.deleteBook(bookToEdit.id);
-  showDeleteModal.value = false;
-  showEditModal.value = false;
   bookToEdit.id = null;
   bookToEdit.title = null;
   bookToEdit.author = null;
   bookToEdit.year = null;
   bookToEdit.genre = null;
   books.value = booksStore.books;
+}
+
+function deleteBook() {
+  showDeleteModal.value = false;
+  showEditModal.value = false;
+  deleteTimeout = setTimeout(approvedDeletion, 3000);
+  notificaionIcon.value = 'deleted';
+  notificationText.value = 'Книга удалена. Вернуть её';
+  notificationSuccess.value = true;
+  isNotificationVisible.value = true;
+  setTimeout(underlineText, 0);
+  debouncedNotification();
+}
+
+function underlineText() {
+  let text = document.getElementsByClassName('notification')[0].getElementsByTagName('p')[0];
+  text.innerHTML = text.innerHTML.substring(0,15)+"<u>"+text.innerHTML.substring(15)+"</u>";
 }
 
 function debounce(fn, delay) {
@@ -83,13 +132,45 @@ function bookSearch(value) {
   } else {
     books.value = booksStore.books;
   }
+  if (sortValue.value !== '') {
+    sortBooks();
+  }
 }
 
 const debouncedSearch = debounce(bookSearch, 250);
+const debouncedNotification = debounce(hideNotification, 3000);
 
 watch(searchValue, (newValue) => {
   debouncedSearch(newValue);
 })
+
+function sortBooks() {
+  switch (sortValue.value) {
+    case 'nameD':
+      books.value.sort((a, b) => (a.title > b.title) ? 1 : ((b.title > a.title) ? -1 : 0));
+      break;
+    case 'nameA':
+      books.value.sort((a, b) => (a.title < b.title) ? 1 : ((b.title < a.title) ? -1 : 0));
+      break;
+    case 'yearD':
+      books.value.sort((a, b) => Number(b.year) - Number(a.year));
+      break;
+    case 'yearA':
+      books.value.sort((a, b) => Number(a.year) - Number(b.year));
+      break;
+    case 'authorD':
+      books.value.sort((a, b) => (a.author > b.author) ? 1 : ((b.author > a.author) ? -1 : 0));
+      break;
+    case 'authorA':
+      books.value.sort((a, b) => (a.author < b.author) ? 1 : ((b.author < a.author) ? -1 : 0));
+      break;
+    default:
+      booksStore.books = JSON.parse(localStorage.getItem('books'))
+      books.value = booksStore.books;
+      bookSearch(searchValue.value);
+      break;
+  }
+}
 
 function toggleSort(value) {
   switch (value) {
@@ -116,29 +197,7 @@ function toggleSort(value) {
       break;
   }
 
-  switch (sortValue.value) {
-    case 'nameD':
-      books.value.sort((a, b) => (a.title > b.title) ? 1 : ((b.title > a.title) ? -1 : 0));
-      break;
-    case 'nameA':
-      books.value.sort((a, b) => (a.title < b.title) ? 1 : ((b.title < a.title) ? -1 : 0));
-      break;
-    case 'yearD':
-      books.value.sort((a, b) => Number(b.year) - Number(a.year));
-      break;
-    case 'yearA':
-      books.value.sort((a, b) => Number(a.year) - Number(b.year));
-      break;
-    case 'authorD':
-      books.value.sort((a, b) => (a.author > b.author) ? 1 : ((b.author > a.author) ? -1 : 0));
-      break;
-    case 'authorA':
-      books.value.sort((a, b) => (a.author < b.author) ? 1 : ((b.author < a.author) ? -1 : 0));
-      break;
-    default:
-      books.value = JSON.parse(localStorage.getItem('books'));
-      break;
-  }
+  sortBooks();
 }
 </script>
 
@@ -181,6 +240,7 @@ function toggleSort(value) {
         <BookCard :book="book" @edit-book="editBook(book)"/>
       </div>
       <p v-if="books.length === 0" class="main-content__empty-search">По вашему запросу ничего не найдено</p>
+      <BaseButton v-if="isNotificationVisible" class="main-notification" :icon="notificaionIcon" :text="notificationText" :isNotification="true" :success="notificationSuccess" @textClicked="notificationClick" @closeNotification="isNotificationVisible = false" />
     </div>
     <BaseButton class="add-book-button_mobile" :icon="'add'" :text="'Добавить книгу'" @click="showAddModal = true" />
 
@@ -257,6 +317,7 @@ header {
       position: absolute;
       top: 32px;
       right: 0;
+      width: 240px;
       background: var(--white);
       border-radius: 8px;
       padding: 12px;
@@ -305,6 +366,7 @@ header {
 }
 
 .main-content {
+  position: relative;
   width: 100%;
   padding: 16px 40px;
   display: flex;
@@ -324,6 +386,13 @@ header {
 
 .add-book-button_mobile {
   display: none;
+}
+
+.main-notification {
+  position: absolute;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
 }
 
 @media (min-width: 768px) and (max-width: 1023px) {
@@ -376,6 +445,14 @@ header {
     position: fixed;
     bottom: 0;
     margin: 16px;
+  }
+
+  .main-notification {
+    top: 16px;
+    bottom: auto;
+    left: 16px;
+    width: calc(100% - 32px);
+    transform: none;
   }
 }
 
@@ -434,6 +511,14 @@ header {
     position: fixed;
     bottom: 0;
     margin: 8px;
+  }
+
+  .main-notification {
+    top: 16px;
+    bottom: auto;
+    left: 16px;
+    width: calc(100% - 32px);
+    transform: none;
   }
 }
 </style>
