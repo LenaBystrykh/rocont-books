@@ -6,7 +6,7 @@
                     <div class="modal__title"><slot name="title"></slot></div>
                     <div class="modal__subtitle"><slot name="subtitle"></slot></div>
                 </div>
-                <img src="../assets/close.svg" @click="emit('closeModal')">
+                <img src="../assets/images/close.svg" @click="emit('closeModal')">
             </div>
 
             <div class="modal__content">

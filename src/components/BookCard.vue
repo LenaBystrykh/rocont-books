@@ -13,7 +13,7 @@
 </template>
 
 <script setup>
-import editIcon from '../assets/file-edit.svg';
+import editIcon from '../assets/images/file-edit.svg';
 
 const emit = defineEmits(['editBook'])
 defineProps({

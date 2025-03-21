@@ -46,8 +46,8 @@
 import BaseModal from './BaseModal.vue';
 import BaseButton from './BaseButton.vue';
 import BaseInput from './BaseInput.vue';
-import checkboxEmpty from '../assets/checkbox-empty.svg';
-import checkboxFilled from '../assets/checkbox-filled.svg';
+import checkboxEmpty from '../assets/images/checkbox-empty.svg';
+import checkboxFilled from '../assets/images/checkbox-filled.svg';
 import { ref, reactive } from 'vue';
 
 const emit = defineEmits(['saveBook', 'deleteBook', 'closeModal'])

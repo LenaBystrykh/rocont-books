@@ -8,11 +8,11 @@
 
 <script setup>
 import { computed } from 'vue';
-import fileAdd from '../assets/file-add.svg';
-import fileDeleted from '../assets/file-deleted.svg';
-import fileError from '../assets/file-error.svg';
-import fileSuccess from '../assets/file-success.svg';
-import closeIcon from '../assets/close-white.svg';
+import fileAdd from '../assets/images/file-add.svg';
+import fileDeleted from '../assets/images/file-deleted.svg';
+import fileError from '../assets/images/file-error.svg';
+import fileSuccess from '../assets/images/file-success.svg';
+import closeIcon from '../assets/images/close-white.svg';
 
 const props = defineProps({
     text: String,

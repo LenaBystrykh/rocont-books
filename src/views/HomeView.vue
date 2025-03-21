@@ -1,3 +1,53 @@
+<template>
+  <main>
+    <header>
+      <div class="search">
+        <img v-if="!isMobileSearchOpen" src="../assets/images/logo.svg">
+        <div class="search__input-container">
+          <img src="../assets/images/search.svg">
+          <BaseInput class="search__input" :placeholder="'Найти ту самую книгу'" v-model="searchValue" />
+        </div>
+        <img v-if="!isMobileSearchOpen" class="search__input-icon" src="../assets/images/search-mobile.svg" @click="isMobileSearchOpen = true">
+        <div v-if="isMobileSearchOpen" class="search__input-container_mobile">
+          <img src="../assets/images/close.svg" @click="clearInput">
+          <BaseInput class="search__input_mobile" :placeholder="'Найти ту самую книгу'" v-model="searchValue" />
+        </div>
+      </div>
+      <div class="header">
+        <div class="header__title">
+          <h1 v-if="searchValue">Книги по запросу <span>«{{ searchValue }}»</span></h1>
+          <h1 v-else>Книги в каталоге <span>{{ books.length }}</span></h1>
+          <img :src="sortIcon" @click="showSortOptions = !showSortOptions">
+          <div v-if="showSortOptions" class="sort-options">
+            <p @click="toggleSort('nameD')"><img :class="{selected: sortValue === 'nameD'}" :src="selectedIcon">По названию (А-Я)</p>
+            <p @click="toggleSort('nameA')"><img :class="{selected: sortValue === 'nameA'}" :src="selectedIcon">По названию (Я-А)</p>
+            <p @click="toggleSort('yearD')"><img :class="{selected: sortValue === 'yearD'}" :src="selectedIcon">По году (сначала новые)</p>
+            <p @click="toggleSort('yearA')"><img :class="{selected: sortValue === 'yearA'}" :src="selectedIcon">По году (сначала старые)</p>
+            <p @click="toggleSort('authorD')"><img :class="{selected: sortValue === 'authorD'}" :src="selectedIcon">По автору (А-Я)</p>
+            <p @click="toggleSort('authorA')"><img :class="{selected: sortValue === 'authorA'}" :src="selectedIcon">По автору (Я-А)</p>
+          </div>
+        </div>
+
+        <BaseButton class="add-book-button" :icon="'add'" :text="'Добавить книгу'" @click="showAddModal = true" />
+      </div>
+    </header>
+
+    <div class="main-content">
+      <div v-for="book in books" :key="book.id">
+        <BookCard :book="book" @edit-book="editBook(book)"/>
+      </div>
+      <p v-if="books.length === 0" class="main-content__empty-search">По вашему запросу ничего не найдено</p>
+      <BaseButton v-if="isNotificationVisible" class="main-notification" :icon="notificaionIcon" :text="notificationText" 
+      :isNotification="true" :success="notificationSuccess" @textClicked="notificationClick" @closeNotification="hideNotification" />
+    </div>
+    <BaseButton class="add-book-button_mobile" :icon="'add'" :text="'Добавить книгу'" @click="showAddModal = true" />
+
+  </main>
+  <AddBookModal v-if="showAddModal" @addBook="addBook" @closeModal="showAddModal = false" />
+  <EditBookModal v-if="showEditModal" :book="bookToEdit" @saveBook="saveBook" @deleteBook="showDeleteModal = true" @closeModal="showEditModal = false" />
+  <DeleteBookModal v-if="showDeleteModal" :book="bookToEdit" @deleteBook="deleteBook" @closeModal="showDeleteModal = false" />
+</template>
+
 <script setup>
 import BaseInput from '@/components/BaseInput.vue';
 import BaseButton from '@/components/BaseButton.vue';
@@ -5,25 +55,25 @@ import BookCard from '@/components/BookCard.vue';
 import AddBookModal from '@/components/AddBookModal.vue';
 import EditBookModal from '@/components/EditBookModal.vue';
 import DeleteBookModal from '@/components/DeleteBookModal.vue';
-import sortIcon from '@/assets/sort.svg';
-import selectedIcon from '@/assets/selected.svg';
+import sortIcon from '@/assets/images/sort.svg';
+import selectedIcon from '@/assets/images/selected.svg';
 import { useBooksStore } from '@/stores/booksStore';
 import { ref, reactive, watch } from 'vue';
 
 const booksStore = useBooksStore();
 const books = ref(booksStore.books)
-let showAddModal = ref(false);
-let showEditModal = ref(false);
-let showDeleteModal = ref(false);
-let showSortOptions = ref(false);
-let searchValue = ref('');
-let sortValue = ref('');
-let isNotificationVisible = ref(false);
-let notificaionIcon = ref('');
-let notificationText = ref('');
-let notificationSuccess = ref(false);
-let isMobileSearchOpen = ref(false);
-let bookToEdit = reactive({
+const showAddModal = ref(false);
+const showEditModal = ref(false);
+const showDeleteModal = ref(false);
+const showSortOptions = ref(false);
+const searchValue = ref('');
+const sortValue = ref('');
+const isNotificationVisible = ref(false);
+const notificaionIcon = ref('');
+const notificationText = ref('');
+const notificationSuccess = ref(false);
+const isMobileSearchOpen = ref(false);
+const bookToEdit = reactive({
   id: null,
   title: null,
   author: null,
@@ -31,10 +81,8 @@ let bookToEdit = reactive({
   genre: null
 })
 
-function clearInput() {
-  isMobileSearchOpen.value = false;
-  searchValue.value = '';
-}
+let deleteTimeout;
+let notificationTimeout;
 
 function addBook(book) {
   booksStore.addBook(book);
@@ -78,8 +126,10 @@ function hideNotification() {
   clearTimeout(notificationTimeout);
 }
 
-let deleteTimeout;
-let notificationTimeout;
+function clearInput() {
+  isMobileSearchOpen.value = false;
+  searchValue.value = '';
+}
 
 function notificationClick() {
   if (notificationText.value === 'Книга удалена. Вернуть её') {
@@ -118,32 +168,6 @@ function underlineText() {
   let text = document.getElementsByClassName('notification')[0].getElementsByTagName('p')[0];
   text.innerHTML = text.innerHTML.substring(0,15)+"<u>"+text.innerHTML.substring(15)+"</u>";
 }
-
-function debounce(fn, delay) {
-  let timeoutId;
-
-  return function(...args) {
-    clearTimeout(timeoutId);
-    timeoutId = setTimeout(() => fn.apply(this, args), delay);
-  }
-}
-
-function bookSearch(value) {
-  if (value) {
-    books.value = booksStore.books.filter(book => book.title.toLowerCase().includes(value.toLowerCase()));
-  } else {
-    books.value = booksStore.books;
-  }
-  if (sortValue.value !== '') {
-    sortBooks();
-  }
-}
-
-const debouncedSearch = debounce(bookSearch, 250);
-
-watch(searchValue, (newValue) => {
-  debouncedSearch(newValue);
-})
 
 function sortBooks() {
   switch (sortValue.value) {
@@ -200,57 +224,34 @@ function toggleSort(value) {
 
   sortBooks();
 }
+
+function debounce(fn, delay) {
+  let timeoutId;
+
+  return function(...args) {
+    clearTimeout(timeoutId);
+    timeoutId = setTimeout(() => fn.apply(this, args), delay);
+  }
+}
+
+function bookSearch(value) {
+  if (value) {
+    books.value = booksStore.books.filter(book => book.title.toLowerCase().includes(value.toLowerCase()));
+  } else {
+    books.value = booksStore.books;
+  }
+  if (sortValue.value !== '') {
+    sortBooks();
+  }
+}
+
+const debouncedSearch = debounce(bookSearch, 250);
+
+watch(searchValue, (newValue) => {
+  debouncedSearch(newValue);
+})
 </script>
 
-<template>
-  <main>
-    <header>
-      <div class="search">
-        <img v-if="!isMobileSearchOpen" src="../assets/logo.svg">
-        <div class="search__input-container">
-          <img src="../assets/search.svg">
-          <BaseInput class="search__input" :placeholder="'Найти ту самую книгу'" v-model="searchValue" />
-        </div>
-        <img v-if="!isMobileSearchOpen" class="search__input-icon" src="../assets/search-mobile.svg" @click="isMobileSearchOpen = true">
-        <div v-if="isMobileSearchOpen" class="search__input-container_mobile">
-          <img src="../assets/close.svg" @click="clearInput">
-          <BaseInput class="search__input_mobile" :placeholder="'Найти ту самую книгу'" v-model="searchValue" />
-        </div>
-      </div>
-      <div class="header">
-        <div class="header__title">
-          <h1 v-if="searchValue">Книги по запросу <span>«{{ searchValue }}»</span></h1>
-          <h1 v-else>Книги в каталоге <span>{{ books.length }}</span></h1>
-          <img :src="sortIcon" @click="showSortOptions = !showSortOptions">
-          <div v-if="showSortOptions" class="sort-options">
-            <p @click="toggleSort('nameD')"><img :class="{selected: sortValue === 'nameD'}" :src="selectedIcon">По названию (А-Я)</p>
-            <p @click="toggleSort('nameA')"><img :class="{selected: sortValue === 'nameA'}" :src="selectedIcon">По названию (Я-А)</p>
-            <p @click="toggleSort('yearD')"><img :class="{selected: sortValue === 'yearD'}" :src="selectedIcon">По году (сначала новые)</p>
-            <p @click="toggleSort('yearA')"><img :class="{selected: sortValue === 'yearA'}" :src="selectedIcon">По году (сначала старые)</p>
-            <p @click="toggleSort('authorD')"><img :class="{selected: sortValue === 'authorD'}" :src="selectedIcon">По автору (А-Я)</p>
-            <p @click="toggleSort('authorA')"><img :class="{selected: sortValue === 'authorA'}" :src="selectedIcon">По автору (Я-А)</p>
-          </div>
-        </div>
-
-        <BaseButton class="add-book-button" :icon="'add'" :text="'Добавить книгу'" @click="showAddModal = true" />
-      </div>
-    </header>
-
-    <div class="main-content">
-      <div v-for="book in books" :key="book.id">
-        <BookCard :book="book" @edit-book="editBook(book)"/>
-      </div>
-      <p v-if="books.length === 0" class="main-content__empty-search">По вашему запросу ничего не найдено</p>
-      <BaseButton v-if="isNotificationVisible" class="main-notification" :icon="notificaionIcon" :text="notificationText" 
-      :isNotification="true" :success="notificationSuccess" @textClicked="notificationClick" @closeNotification="hideNotification" />
-    </div>
-    <BaseButton class="add-book-button_mobile" :icon="'add'" :text="'Добавить книгу'" @click="showAddModal = true" />
-
-  </main>
-  <AddBookModal v-if="showAddModal" @addBook="addBook" @closeModal="showAddModal = false" />
-  <EditBookModal v-if="showEditModal" :book="bookToEdit" @saveBook="saveBook" @deleteBook="showDeleteModal = true" @closeModal="showEditModal = false" />
-  <DeleteBookModal v-if="showDeleteModal" :book="bookToEdit" @deleteBook="deleteBook" @closeModal="showDeleteModal = false" />
-</template>
 
 <style lang="scss">
 main {
@@ -317,6 +318,7 @@ header {
 
     .sort-options {
       position: absolute;
+      z-index: 10;
       top: 32px;
       right: 0;
       width: 240px;
@@ -465,37 +467,37 @@ header {
 
   .search {
     justify-content: space-between;
-  }
 
-  .search__input-container {
-    display: none;
-  }
-
-  .search__input-container_mobile {
-    width: 100%;
-    display: flex;
-    position: relative;
-
-    img {
-      position: absolute;
-      left: 12px;
-      top: 10px;
+    &__input-container {
+      display: none;
     }
-  }
 
-  .search__input_mobile {
-    height: 41px;
-    padding-left: 36px;
-    background: var(--white);
-    border: 2px solid var(--white);
+    &__input-container_mobile {
+      width: 100%;
+      display: flex;
+      position: relative;
 
-    &:focus {
-      border: 2px solid var(--accent);
+      img {
+        position: absolute;
+        left: 12px;
+        top: 10px;
+      }
     }
-  }
 
-  .search__input-icon {
-    display: flex;
+    &__input_mobile {
+      height: 41px;
+      padding-left: 36px;
+      background: var(--white);
+      border: 2px solid var(--white);
+
+      &:focus {
+        border: 2px solid var(--accent);
+      }
+    }
+
+    &__input-icon {
+      display: flex;
+    }
   }
 
   .main-content {

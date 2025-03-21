@@ -9,7 +9,13 @@ export const useBooksStore = defineStore('books', {
   },
   actions: {
     addBook(book) {
-      this.books.unshift({id: this.books.length + 1, ...book});
+      let id = -1;
+      for (let i = 0; i < this.books.length; i++) {
+        if (this.books[i].id > id) {
+          id = this.books[i].id;
+        }
+      }
+      this.books.unshift({id: id + 1, ...book});
       localStorage.setItem('books', JSON.stringify(this.books));
     },
     editBook(book) {
